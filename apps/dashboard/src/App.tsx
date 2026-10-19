@@ -112,211 +112,35 @@ type SidebarView = 'target' | 'methods' | 'sitemap' | 'search' | 'help' | 'setti
 
 // ── Default Ready State Data ────────────────────────────────────────────────
 
-const INITIAL_STATE_GRAPH: StateNode[] = [
-  { id: 'state_0', url: 'http://localhost:5174/', title: 'BuggyCart - Tech Store', components: ['Navbar', 'ProductGrid', 'ProductCard', 'CartDrawerTrigger', 'Footer'] },
-  { id: 'state_1', url: 'http://localhost:5174/cart', title: 'Shopping Cart', components: ['CartItemsTable', 'QuantityControls', 'CouponCodeInput', 'CheckoutCTA'] },
-  { id: 'state_2', url: 'http://localhost:5174/checkout', title: 'Order Checkout', components: ['ShippingForm', 'PaymentDetails', 'OrderSummary', 'SubmitOrderButton'] },
-  { id: 'state_3', url: 'http://localhost:5174/success', title: 'Order Confirmation', components: ['ConfirmationBadge', 'OrderReceipt', 'ContinueShoppingLink'] },
-]
+const INITIAL_STATE_GRAPH: StateNode[] = []
 
-const INITIAL_TEST_CASES: TestCase[] = [
-  {
-    id: 'tc_001',
-    title: 'Happy Path: Complete checkout with standard shipping',
-    category: 'happy-path',
-    priority: 'critical',
-    status: 'passed',
-    durationMs: 4200,
-    steps: [
-      { index: 1, description: 'Navigate to store catalog', action: { type: 'navigate', url: 'http://localhost:5174/' }, expectedOutcome: 'Catalog renders with product listings', passed: true, durationMs: 650 },
-      { index: 2, description: 'Select Wireless Headphones Pro and add to cart', action: { type: 'click', selector: '#add-to-cart-1' }, expectedOutcome: 'Cart counter increments to 1', passed: true, durationMs: 420 },
-      { index: 3, description: 'Open cart and proceed to checkout', action: { type: 'click', selector: 'a[href="/checkout"]' }, expectedOutcome: 'Checkout form is displayed', passed: true, durationMs: 820 },
-      { index: 4, description: 'Submit order form with valid shipping details', action: { type: 'click', selector: 'button[type="submit"]' }, expectedOutcome: 'Order confirmation page displayed', passed: true, durationMs: 1200 },
-    ]
-  },
-  {
-    id: 'tc_002',
-    title: 'Boundary: Negative quantity handling in cart items',
-    category: 'boundary',
-    priority: 'high',
-    status: 'failed',
-    durationMs: 3100,
-    steps: [
-      { index: 1, description: 'Navigate to store catalog', action: { type: 'navigate', url: 'http://localhost:5174/' }, expectedOutcome: 'Catalog renders', passed: true, durationMs: 500 },
-      { index: 2, description: 'Add Ergonomic Mouse to cart', action: { type: 'click', selector: '#add-to-cart-4' }, expectedOutcome: 'Item added to cart', passed: true, durationMs: 400 },
-      { index: 3, description: 'Open cart page', action: { type: 'navigate', url: 'http://localhost:5174/cart' }, expectedOutcome: 'Cart items listed', passed: true, durationMs: 600 },
-      { index: 4, description: 'Decrement quantity below 1 into negative value', action: { type: 'fill', selector: 'input[type="number"]', value: '-1' }, expectedOutcome: 'Validation blocks negative quantity or resets to 1', actualOutcome: 'Cart accepts -1 and reduces total price balance below zero', passed: false, durationMs: 800 },
-    ]
-  },
-  {
-    id: 'tc_003',
-    title: 'Edge Case: Duplicate discount deduction on item removal',
-    category: 'edge',
-    priority: 'critical',
-    status: 'failed',
-    durationMs: 3800,
-    steps: [
-      { index: 1, description: 'Add two items to shopping cart', action: { type: 'click', selector: '#add-to-cart-1' }, expectedOutcome: 'Items in cart', passed: true, durationMs: 600 },
-      { index: 2, description: 'Apply coupon code SAVE20', action: { type: 'fill', selector: '#coupon-code', value: 'SAVE20' }, expectedOutcome: '20% discount applied once', passed: true, durationMs: 900 },
-      { index: 3, description: 'Remove second item from cart', action: { type: 'click', selector: 'button.remove-item' }, expectedOutcome: 'Cart subtotal recalculates with 20% applied to remaining items', actualOutcome: 'Discount amount subtracted twice, leading to incorrect subtotal calculation', passed: false, durationMs: 1100 },
-    ]
-  },
-  {
-    id: 'tc_004',
-    title: 'Error Handling: Special characters in customer name validation',
-    category: 'error',
-    priority: 'medium',
-    status: 'passed',
-    durationMs: 2900,
-    steps: [
-      { index: 1, description: 'Navigate to checkout form', action: { type: 'navigate', url: 'http://localhost:5174/checkout' }, expectedOutcome: 'Checkout inputs accessible', passed: true, durationMs: 650 },
-      { index: 2, description: 'Input international characters in recipient name', action: { type: 'fill', selector: '#firstName', value: "O'Connor <script>" }, expectedOutcome: 'Input sanitization prevents XSS and displays inline validation', passed: true, durationMs: 950 },
-      { index: 3, description: 'Verify form remains responsive', action: { type: 'click', selector: '#lastName' }, expectedOutcome: 'Form does not crash or unmount', passed: true, durationMs: 400 },
-    ]
-  }
-]
+const INITIAL_TEST_CASES: TestCase[] = []
 
-const INITIAL_BUGS: BugReport[] = [
-  {
-    id: 'BUG-101',
-    title: 'Cart subtotal calculation discrepancy on item removal with coupon',
-    severity: 'critical',
-    category: 'functional',
-    reproducible: true,
-    reproductionSteps: [
-      { index: 1, description: 'Navigate to http://localhost:5174/' },
-      { index: 2, description: 'Add 2 products to the cart and navigate to /cart' },
-      { index: 3, description: 'Enter discount coupon "SAVE20" and click Apply' },
-      { index: 4, description: 'Click "Remove" on the first product' },
-      { index: 5, description: 'Observe the order summary total amount' }
-    ],
-    expectedBehavior: 'Order discount should recalculate to exactly 20% of the updated subtotal.',
-    actualBehavior: 'The coupon discount is deducted twice from the remaining item subtotal, resulting in an invalid balance.',
-    consoleErrors: ['[Error] [CartCalculation] State mutation occurred during discount recalculation hook'],
-    networkErrors: [],
-    discoveredAt: Date.now() - 1000 * 60 * 12
-  },
-  {
-    id: 'BUG-102',
-    title: 'Negative item quantity accepted in cart input without upper/lower clamp',
-    severity: 'high',
-    category: 'boundary',
-    reproducible: true,
-    reproductionSteps: [
-      { index: 1, description: 'Navigate to http://localhost:5174/cart' },
-      { index: 2, description: 'Focus on quantity numeric input field' },
-      { index: 3, description: 'Type "-1" or click decrement button below zero' },
-      { index: 4, description: 'Click anywhere outside the input to trigger blur' }
-    ],
-    expectedBehavior: 'Input should clamp to minimum value of 1 or trigger an item removal prompt.',
-    actualBehavior: 'Input allows negative integers, causing subtotal calculation to subtract from order total.',
-    consoleErrors: [],
-    networkErrors: [{ url: 'http://localhost:5174/api/cart/update', method: 'POST', status: 400 }],
-    discoveredAt: Date.now() - 1000 * 60 * 8
-  }
-]
+const INITIAL_BUGS: BugReport[] = []
 
-const INITIAL_GENERATED_TESTS: GeneratedTest[] = [
-  {
-    id: 'gen_tc_001',
-    filename: 'checkout-flow.spec.ts',
-    title: 'Happy Path: Complete checkout with standard shipping',
-    status: 'generated',
-    code: `import { test, expect } from '@playwright/test';
+const INITIAL_GENERATED_TESTS: GeneratedTest[] = []
 
-test.describe('E-Commerce: Checkout Flow Validation', () => {
-  test('Complete checkout journey with valid customer details', async ({ page }) => {
-    // 1. Navigate to store homepage
-    await page.goto('http://localhost:5174/');
-    await expect(page.locator('h1')).toBeVisible();
-
-    // 2. Select product and add to cart
-    const addToCartButton = page.locator('#add-to-cart-1');
-    await expect(addToCartButton).toBeVisible();
-    await addToCartButton.click();
-
-    // 3. Open Cart and proceed to checkout
-    await page.getByRole('link', { name: 'Cart' }).click();
-    await expect(page).toHaveURL(/.*\\/cart/);
-    await page.getByRole('link', { name: 'Proceed to Checkout' }).click();
-
-    // 4. Fill shipping details
-    await expect(page).toHaveURL(/.*\\/checkout/);
-    await page.locator('#firstName').fill('Alex');
-    await page.locator('#lastName').fill('Morgan');
-    await page.locator('#email').fill('alex.morgan@example.com');
-    await page.locator('#address').fill('100 Silicon Way');
-    await page.locator('#city').fill('Bengaluru');
-    await page.locator('#zip').fill('560001');
-
-    // 5. Submit order and verify confirmation
-    await page.getByRole('button', { name: 'Place Order' }).click();
-    await expect(page).toHaveURL(/.*\\/success/);
-    await expect(page.getByText('Order Placed Successfully')).toBeVisible();
-  });
-});
-`
-  },
-  {
-    id: 'gen_tc_004',
-    filename: 'input-validation.spec.ts',
-    title: 'Error Handling: Special characters in customer name validation',
-    status: 'generated',
-    code: `import { test, expect } from '@playwright/test';
-
-test.describe('E-Commerce: Input Sanitization & Resilience', () => {
-  test('Verify checkout form handles international characters safely', async ({ page }) => {
-    await page.goto('http://localhost:5174/checkout');
-
-    // Test boundary characters in name inputs
-    const firstNameInput = page.locator('#firstName');
-    await firstNameInput.fill("O'Connor <script>alert(1)</script>");
-
-    const lastNameInput = page.locator('#lastName');
-    await lastNameInput.fill('Müller-Schmidt');
-
-    // Form should sanitize without crashing
-    await expect(firstNameInput).toHaveValue("O'Connor <script>alert(1)</script>");
-    await expect(page.locator('body')).not.toContainText('Uncaught TypeError');
-  });
-});
-`
-  }
-]
-
-const INITIAL_LOGS: ActionLog[] = [
-  { timestamp: Date.now() - 1000 * 60 * 15, agent: 'cartographer', type: 'thought', message: 'Studio initialized. Connecting to Playwright Chromium worker on port 3001.' },
-  { timestamp: Date.now() - 1000 * 60 * 14, agent: 'cartographer', type: 'action', message: 'Cartographer ready to map target application topology.' },
-  { timestamp: Date.now() - 1000 * 60 * 12, agent: 'planner', type: 'thought', message: 'Test generation rules loaded: Happy-path (3), Boundary (2), Edge (2), Error (2).' },
-  { timestamp: Date.now() - 1000 * 60 * 10, agent: 'executor', type: 'action', message: 'Driver engine standing by for headless browser execution.' },
-  { timestamp: Date.now() - 1000 * 60 * 8, agent: 'critic', type: 'thought', message: 'Bug reproduction sandbox configured with independent browser contexts.' },
-  { timestamp: Date.now() - 1000 * 60 * 5, agent: 'synthesizer', type: 'thought', message: 'Playwright TypeScript synthesis pipeline initialized with @playwright/test syntax.' },
-]
-
-const INITIAL_NOTIFICATIONS: NotificationItem[] = [
-  { id: 'notif_1', title: 'Bug BUG-101 verified by Critic in clean sandbox', time: '12m ago', type: 'bug' },
-  { id: 'notif_2', title: 'Synthesized checkout-flow.spec.ts Playwright spec', time: '14m ago', type: 'success' },
-  { id: 'notif_3', title: 'Cartographer mapped 4 routes and 15 interactive components', time: '15m ago', type: 'info' },
-]
+const INITIAL_LOGS: ActionLog[] = []
+const INITIAL_NOTIFICATIONS: NotificationItem[] = []
 
 export default function App() {
   const [session, setSession] = useState<AgentSession | null>(null)
-  const [logs, setLogs] = useState<ActionLog[]>(INITIAL_LOGS)
-  const [testCases, setTestCases] = useState<TestCase[]>(INITIAL_TEST_CASES)
-  const [bugs, setBugs] = useState<BugReport[]>(INITIAL_BUGS)
-  const [generatedTests, setGeneratedTests] = useState<GeneratedTest[]>(INITIAL_GENERATED_TESTS)
-  const [stateGraph, setStateGraph] = useState<StateNode[]>(INITIAL_STATE_GRAPH)
+  const [logs, setLogs] = useState<ActionLog[]>([])
+  const [testCases, setTestCases] = useState<TestCase[]>([])
+  const [bugs, setBugs] = useState<BugReport[]>([])
+  const [generatedTests, setGeneratedTests] = useState<GeneratedTest[]>([])
+  const [stateGraph, setStateGraph] = useState<StateNode[]>([])
   const [studioTab, setStudioTab] = useState<StudioTab>('tests')
 
   // Selection states
-  const [selectedBug, setSelectedBug] = useState<BugReport | null>(INITIAL_BUGS[0])
-  const [selectedTest, setSelectedTest] = useState<GeneratedTest | null>(INITIAL_GENERATED_TESTS[0])
-  const [expandedTestId, setExpandedTestId] = useState<string | null>(INITIAL_TEST_CASES[0].id)
+  const [selectedBug, setSelectedBug] = useState<BugReport | null>(null)
+  const [selectedTest, setSelectedTest] = useState<GeneratedTest | null>(null)
+  const [expandedTestId, setExpandedTestId] = useState<string | null>(null)
 
   // Sidebar Configuration States
-  const [targetUrl, setTargetUrl] = useState('http://localhost:5174')
-  const [appDesc, setAppDesc] = useState('An e-commerce store where users can browse products, add items to a cart, apply coupon codes (SAVE20), and complete checkout with shipping and payment details.')
-  const [presetType, setPresetType] = useState<'buggycart' | 'custom'>('buggycart')
+  const [targetUrl, setTargetUrl] = useState('')
+  const [appDesc, setAppDesc] = useState('')
+  const [presetType, setPresetType] = useState<'buggycart' | 'custom'>('custom')
   const [testScope, setTestScope] = useState<'comprehensive' | 'smoke'>('comprehensive')
 
   // Preferred Testing Types with toggles
@@ -331,7 +155,7 @@ export default function App() {
   const [showNotifications, setShowNotifications] = useState(false)
   const [showHelpModal, setShowHelpModal] = useState(false)
   const [showSettingsModal, setShowSettingsModal] = useState(false)
-  const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS)
+  const [notifications, setNotifications] = useState<NotificationItem[]>([])
 
   // Search & Filters
   const [sidebarSearch, setSidebarSearch] = useState('')
@@ -478,6 +302,18 @@ export default function App() {
     logsEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [logs])
 
+  useEffect(() => {
+    if (!selectedBug && bugs.length > 0) {
+      setSelectedBug(bugs[0])
+    }
+  }, [bugs, selectedBug])
+
+  useEffect(() => {
+    if (!selectedTest && generatedTests.length > 0) {
+      setSelectedTest(generatedTests[0])
+    }
+  }, [generatedTests, selectedTest])
+
   // ── Session Controls ─────────────────────────────────────────────────────
 
   const startSession = async () => {
@@ -516,13 +352,15 @@ export default function App() {
 
   const resetStudio = () => {
     setSession(null)
-    setLogs(INITIAL_LOGS)
-    setTestCases(INITIAL_TEST_CASES)
-    setBugs(INITIAL_BUGS)
-    setGeneratedTests(INITIAL_GENERATED_TESTS)
-    setStateGraph(INITIAL_STATE_GRAPH)
-    setSelectedBug(INITIAL_BUGS[0])
-    setSelectedTest(INITIAL_GENERATED_TESTS[0])
+    setLogs([])
+    setTestCases([])
+    setBugs([])
+    setGeneratedTests([])
+    setStateGraph([])
+    setSelectedBug(null)
+    setSelectedTest(null)
+    setExpandedTestId(null)
+    setNotifications([])
   }
 
   // ── Helpers ──────────────────────────────────────────────────────────────
@@ -638,15 +476,22 @@ ${bug.networkErrors.length ? `#### Network Errors:\n\`\`\`\n${bug.networkErrors.
                   </button>
                 </div>
                 <div className="notifications-list">
-                  {notifications.map(n => (
-                    <div key={n.id} className="notification-row">
-                      <span className={`notif-indicator ${n.type}`} />
-                      <div className="notif-content">
-                        <span className="notif-title">{n.title}</span>
-                        <span className="notif-time mono">{n.time}</span>
-                      </div>
+                  {notifications.length === 0 ? (
+                    <div className="empty-panel-state-mini">
+                      <Bell size={16} className="text-muted" />
+                      <span>No notifications yet</span>
                     </div>
-                  ))}
+                  ) : (
+                    notifications.map(n => (
+                      <div key={n.id} className="notification-row">
+                        <span className={`notif-indicator ${n.type}`} />
+                        <div className="notif-content">
+                          <span className="notif-title">{n.title}</span>
+                          <span className="notif-time mono">{n.time}</span>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             )}
@@ -722,18 +567,6 @@ ${bug.networkErrors.length ? `#### Network Errors:\n\`\`\`\n${bug.networkErrors.
 
         {/* ── Expandable Primary Side Panel (Sliding Drawer) ── */}
         <aside className={`primary-side-panel ${activeSidebarView ? 'open' : 'collapsed'}`}>
-          {/* Panel Header */}
-          <div className="side-panel-header">
-            <span className="side-panel-title">
-              {activeSidebarView === 'target' && 'TARGET APPLICATION'}
-              {activeSidebarView === 'methods' && 'TESTING METHODS'}
-              {activeSidebarView === 'sitemap' && 'SITEMAP EXPLORER'}
-              {activeSidebarView === 'search' && 'WORKSPACE SEARCH'}
-              {activeSidebarView === 'help' && 'HELP & GUIDELINES'}
-              {activeSidebarView === 'settings' && 'ENGINE SETTINGS'}
-            </span>
-          </div>
-
           {/* Panel Body Content by active view */}
           <div className="side-panel-content">
             {activeSidebarView === 'target' && (
@@ -747,21 +580,6 @@ ${bug.networkErrors.length ? `#### Network Errors:\n\`\`\`\n${bug.networkErrors.
 
                   <div className="sidebar-preset-stack">
                     <button
-                      className={`sidebar-preset-card ${presetType === 'buggycart' ? 'active' : ''}`}
-                      onClick={() => {
-                        setPresetType('buggycart')
-                        setTargetUrl('http://localhost:5174')
-                        setAppDesc('An e-commerce store where users can browse products, add items to a cart, apply coupon codes (SAVE20), and complete checkout with shipping and payment details.')
-                      }}
-                    >
-                      <div className="preset-card-top">
-                        <ShoppingBag size={13} className="preset-icon" />
-                        <span className="preset-name">BuggyCart Store</span>
-                      </div>
-                      <span className="preset-detail">Local benchmark (port 5174, 6 planted bugs)</span>
-                    </button>
-
-                    <button
                       className={`sidebar-preset-card ${presetType === 'custom' ? 'active' : ''}`}
                       onClick={() => {
                         setPresetType('custom')
@@ -774,6 +592,21 @@ ${bug.networkErrors.length ? `#### Network Errors:\n\`\`\`\n${bug.networkErrors.
                         <span className="preset-name">Custom URL</span>
                       </div>
                       <span className="preset-detail">Staging, preview, or production web app</span>
+                    </button>
+
+                    <button
+                      className={`sidebar-preset-card ${presetType === 'buggycart' ? 'active' : ''}`}
+                      onClick={() => {
+                        setPresetType('buggycart')
+                        setTargetUrl('http://localhost:5174')
+                        setAppDesc('An e-commerce store where users can browse products, add items to a cart, apply coupon codes (SAVE20), and complete checkout with shipping and payment details.')
+                      }}
+                    >
+                      <div className="preset-card-top">
+                        <ShoppingBag size={13} className="preset-icon" />
+                        <span className="preset-name">BuggyCart Store</span>
+                      </div>
+                      <span className="preset-detail">Local benchmark (port 5174, 6 planted bugs)</span>
                     </button>
                   </div>
                 </div>
@@ -975,24 +808,31 @@ ${bug.networkErrors.length ? `#### Network Errors:\n\`\`\`\n${bug.networkErrors.
                   </span>
 
                   <div className="sitemap-node-list">
-                    {stateGraph.map(node => (
-                      <div
-                        key={node.id}
-                        className="sitemap-panel-card"
-                        onClick={() => setStudioTab('sitemap')}
-                      >
-                        <div className="sitemap-card-top">
-                          <span className="node-badge mono">{node.id}</span>
-                          <span className="node-title">{node.title}</span>
-                        </div>
-                        <span className="node-url mono">{node.url}</span>
-                        <div className="node-components-pills">
-                          {node.components.map(c => (
-                            <span key={c} className="node-component-pill">{c}</span>
-                          ))}
-                        </div>
+                    {stateGraph.length === 0 ? (
+                      <div className="empty-panel-state-mini">
+                        <Layers size={18} className="text-muted" />
+                        <span>No pages mapped yet. Run a session to discover routes.</span>
                       </div>
-                    ))}
+                    ) : (
+                      stateGraph.map(node => (
+                        <div
+                          key={node.id}
+                          className="sitemap-panel-card"
+                          onClick={() => setStudioTab('sitemap')}
+                        >
+                          <div className="sitemap-card-top">
+                            <span className="node-badge mono">{node.id}</span>
+                            <span className="node-title">{node.title}</span>
+                          </div>
+                          <span className="node-url mono">{node.url}</span>
+                          <div className="node-components-pills">
+                            {node.components.map(c => (
+                              <span key={c} className="node-component-pill">{c}</span>
+                            ))}
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
               </>
@@ -1221,8 +1061,8 @@ ${bug.networkErrors.length ? `#### Network Errors:\n\`\`\`\n${bug.networkErrors.
               {/* Active Action HUD Bar */}
               <div className="action-hud-bar">
                 <div className="hud-agent-chip">
-                  <span className="hud-indicator active" />
-                  <span className="hud-agent-name">{currentAgent.toUpperCase()}</span>
+                  <span className={`hud-indicator ${isRunning ? 'active' : ''}`} />
+                  <span className="hud-agent-name">{isRunning ? currentAgent.toUpperCase() : 'STANDBY'}</span>
                 </div>
                 <div className="hud-message">
                   {latestLog ? (
@@ -1601,27 +1441,35 @@ ${bug.networkErrors.length ? `#### Network Errors:\n\`\`\`\n${bug.networkErrors.
                     <span className="toolbar-hint">Discovered by Cartographer agent accessibility & route analysis</span>
                   </div>
 
-                  <div className="sitemap-grid">
-                    {stateGraph.map((node, i) => (
-                      <div key={node.id} className="sitemap-node-card">
-                        <div className="node-card-header">
-                          <span className="node-step-index">{i + 1}</span>
-                          <div className="node-title-group">
-                            <span className="node-title">{node.title}</span>
-                            <span className="node-url mono">{node.url}</span>
+                  {stateGraph.length === 0 ? (
+                    <div className="empty-panel-state">
+                      <Layers size={32} />
+                      <p>No routes discovered yet</p>
+                      <small>The Cartographer agent maps route topology once a QA session starts</small>
+                    </div>
+                  ) : (
+                    <div className="sitemap-grid">
+                      {stateGraph.map((node, i) => (
+                        <div key={node.id} className="sitemap-node-card">
+                          <div className="node-card-header">
+                            <span className="node-step-index">{i + 1}</span>
+                            <div className="node-title-group">
+                              <span className="node-title">{node.title}</span>
+                              <span className="node-url mono">{node.url}</span>
+                            </div>
+                          </div>
+                          <div className="node-components-group">
+                            <span className="components-label">Detected UI Components:</span>
+                            <div className="component-tags-list">
+                              {node.components.map((comp, idx) => (
+                                <span key={idx} className="comp-tag">{comp}</span>
+                              ))}
+                            </div>
                           </div>
                         </div>
-                        <div className="node-components-group">
-                          <span className="components-label">Detected UI Components:</span>
-                          <div className="component-tags-list">
-                            {node.components.map((comp, idx) => (
-                              <span key={idx} className="comp-tag">{comp}</span>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -1657,14 +1505,22 @@ ${bug.networkErrors.length ? `#### Network Errors:\n\`\`\`\n${bug.networkErrors.
 
                   {/* Logs Stream List */}
                   <div className="logs-scroller">
-                    {filteredLogs.map((log, i) => (
-                      <div key={i} className={`log-entry-row ${log.type}`}>
-                        <span className="log-col-time">{formatTime(log.timestamp)}</span>
-                        <span className={`log-col-type type-${log.type}`}>{log.type.toUpperCase()}</span>
-                        <span className="log-col-agent">{log.agent.toUpperCase()}</span>
-                        <span className="log-col-message">{log.message}</span>
+                    {filteredLogs.length === 0 ? (
+                      <div className="empty-panel-state">
+                        <Terminal size={32} />
+                        <p>No execution logs yet</p>
+                        <small>Agent thoughts, actions, and observations will stream here in real time</small>
                       </div>
-                    ))}
+                    ) : (
+                      filteredLogs.map((log, i) => (
+                        <div key={i} className={`log-entry-row ${log.type}`}>
+                          <span className="log-col-time">{formatTime(log.timestamp)}</span>
+                          <span className={`log-col-type type-${log.type}`}>{log.type.toUpperCase()}</span>
+                          <span className="log-col-agent">{log.agent.toUpperCase()}</span>
+                          <span className="log-col-message">{log.message}</span>
+                        </div>
+                      ))
+                    )}
                     <div ref={logsEndRef} />
                   </div>
                 </div>
